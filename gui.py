@@ -18,32 +18,34 @@ def callbackNextMeals():
 root = Tk()
 # root.geometry('400x600')
 
+mainFrame = Frame(root)
+
 # Frame : Logo
-logoFrame = Frame(root)
+logoFrame = Frame(mainFrame)
 logoImage = ImageTk.PhotoImage(Image.open("logo.png"))  
 logoImageLabel = Label(logoFrame, image = logoImage)
 logoImageLabel.pack()
 logoFrame.grid(row=0, column=0)
 
 # Frame : Input
-frameInput = Frame(root)
+frameInput = Frame(mainFrame)
 Label(frameInput, text = "Age").grid(row=0,column=0)
 inputAge=IntVar()
 frameInputAgeEntry = Entry(frameInput, textvariable=inputAge, width=5)
 frameInputAgeEntry.insert(0, "")
-frameInputAgeEntry.grid(row=0,column=1)
+frameInputAgeEntry.grid(row=0,column=1,padx=(0,10))
 Label(frameInput, text = "Gender").grid(row=0,column=2)
 inputGender = StringVar()
 inputGender.set(GENDERS[0])
 op = OptionMenu(frameInput, inputGender, *GENDERS)
 op.config(width=8)
-op.grid(row=0,column=3)
+op.grid(row=0,column=3,padx=(0,10))
 Button(frameInput, text ="Generate Meals!", command = callbackGenerateMeals).grid(row=0,column=4)
 frameInput.grid(row=1, column=0)
 
 # Frame : Generated Meals
-frameGenerateMeals = Frame(root)
-Label(frameGenerateMeals, text = "GENERATED MEALS").grid(row=0, column=0)
+frameGenerateMeals = Frame(mainFrame)
+Label(frameGenerateMeals, text = "GENERATED MEALS").grid(row=0, column=0, pady=(10, 5))
 frameMealsGrid = Frame(frameGenerateMeals)
 def dishFrame(frameMealsGrid, row, column, dishName, scores, ingredients):
     dish1 = Frame(frameMealsGrid)
@@ -83,9 +85,11 @@ Label(frameGenerateMeals, text = "TOTAL RATING: 69").grid(row=2, column=0)
 frameGenerateMeals.grid(row=2, column=0)
 
 # Frame : Lower Input
-frameLowerInput = Frame(root)
-Button(frameLowerInput, text ="Previous Meal", command = callbackPreviousMeals).grid(row=0,column=0)
-Button(frameLowerInput, text ="Next Meal", command = callbackNextMeals).grid(row=0,column=1)
-frameLowerInput.grid(row=3, column=0)
+frameLowerInput = Frame(mainFrame)
+Button(frameLowerInput, text ="Previous Meal", command = callbackPreviousMeals).grid(row=0,column=0, padx=2)
+Button(frameLowerInput, text ="Next Meal", command = callbackNextMeals).grid(row=0,column=1, padx=2)
+frameLowerInput.grid(row=3, column=0, pady=(10, 0))
+
+mainFrame.grid(padx=10, pady=10)
 
 root.mainloop()
