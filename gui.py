@@ -1,22 +1,113 @@
 from tkinter import *
 from tkinter import ttk
 from PIL import ImageTk,Image
+from DishesData import MealsData, Meal, Dish
 
 GENDERS = ["", "Male", "Female"]
+COLORS_DISH_CARD = "#f9f9f9"
 
-inputAge = None
+mealsData = None
+mealsDataIndex = 0
 
 def callbackGenerateMeals():
-    print(f"Generate meals! ({inputAge.get()}) ({inputGender.get()})")
+    global errorMessageLabel
+    global mealsData
+    global mealsDataIndex
+
+    try:
+        ageInt = int(inputAge.get())
+        if (not (1 <= ageInt <= 90)):
+            errorMessageLabel["text"] = "Please enter a supported age!"
+            return    
+    except ValueError:
+        errorMessageLabel["text"] = "Please enter a valid age!"
+        return
+    if len(inputGender.get()) == 0:
+        errorMessageLabel["text"] = "Please select your gender!"
+        return    
+    errorMessageLabel["text"] = ""
+
+    ########################################## EDIT CODE HERE 🔽
+    # mealsData should be an instance of the MealsData class
+
+    age = int(inputAge.get())
+    gender = inputGender.get()
+
+    mealsData = MealsData([
+        Meal([
+            Dish("Carbonara", ["Pasta", "Milk", "Pepper", "Egg"], 15, 20, 21, 25, 30),
+            Dish("Spaghetti", ["Pasta", "Tomato Sauce", "Cheese", "Pepper", "Hotdogs"], 50, 20, 15, 16, 16),
+            Dish("Lasagna", ["Pasta", "Pasta", "Pasta"], 13, 15, 16, 12, 11),
+        ], 99),
+        Meal([
+            Dish("Egg and Mentos", ["Egg", "Mentos", "Salt"], 99, 99, 94, 92, 1),
+        ], 96)
+    ])
+
+    ########################################## EDIT CODE HERE 🔼
+
+    mealsDataIndex = 0
+    updateData()
 
 def callbackPreviousMeals():
-    print(f"Previous Meal!")
+    global mealsDataIndex
+    global mealsData
+    if (mealsData != None and mealsDataIndex > 0):
+        mealsDataIndex -= 1
+        updateData()
 
 def callbackNextMeals():
-    print(f"Next Meal!")
+    global mealsDataIndex
+    global mealsData
+    if (mealsData != None and mealsDataIndex < len(mealsData.mealList) - 1):
+        mealsDataIndex += 1
+        updateData()
 
+def updateData():
+    global dishFrameComponents
+    global totalText
+    global buttonPrevMeal
+    global buttonNextMeal
+    global buttonGenerate
+
+    if (mealsData == None):
+        return
+
+    meal = mealsData.mealList[mealsDataIndex]
+    
+    for dishI in range(4):
+        dish = meal.getDish(dishI + 1)
+        dishFrameComponents[f"dish{dishI + 1}"]["ingredients"].delete(0,END)
+        if (dish != None):
+            for ingredient in dish.ingredients:
+                dishFrameComponents[f"dish{dishI + 1}"]["ingredients"].insert(END, ingredient)
+        dishFrameComponents[f"dish{dishI + 1}"]["name"]["text"] = "" if dish == None else dish.name
+        dishFrameComponents[f"dish{dishI + 1}"]["calories"]["text"] = "" if dish == None else str(dish.calories)
+        dishFrameComponents[f"dish{dishI + 1}"]["protein"]["text"] = "" if dish == None else str(dish.protein)
+        dishFrameComponents[f"dish{dishI + 1}"]["fat"]["text"] = "" if dish == None else str(dish.fat)
+        dishFrameComponents[f"dish{dishI + 1}"]["carbs"]["text"] = "" if dish == None else str(dish.carbs)
+        dishFrameComponents[f"dish{dishI + 1}"]["fiber"]["text"] = "" if dish == None else str(dish.fiber)
+
+        # if (dish == None):
+        #     dishFrameComponents[f"dishFrame{dishI + 1}"].grid_remove()
+        # else:
+        #     dishFrameComponents[f"dishFrame{dishI + 1}"].grid()
+    
+    totalText["text"] = "Total Rating: " + str(meal.totalScore)
+    buttonPrevMeal["state"] = "disabled" if mealsDataIndex == 0 else "normal"
+    buttonNextMeal["state"] = "disabled" if mealsDataIndex == len(mealsData.mealList) - 1 else "normal"
+
+    buttonGenerate["text"] = "Regenerate!"
+
+    
 root = Tk()
-# root.geometry('400x600')
+root.title("DAIET - AI Based Meal Generation")
+root.iconbitmap("daiet.ico")
+
+# Variables
+inputAge = StringVar()
+inputGender = StringVar()
+inputGender.set(GENDERS[0])
 
 mainFrame = Frame(root)
 
@@ -30,66 +121,101 @@ logoFrame.grid(row=0, column=0)
 # Frame : Input
 frameInput = Frame(mainFrame)
 Label(frameInput, text = "Age").grid(row=0,column=0)
-inputAge=IntVar()
 frameInputAgeEntry = Entry(frameInput, textvariable=inputAge, width=5)
 frameInputAgeEntry.insert(0, "")
 frameInputAgeEntry.grid(row=0,column=1,padx=(0,10))
 Label(frameInput, text = "Gender").grid(row=0,column=2)
-inputGender = StringVar()
-inputGender.set(GENDERS[0])
-op = OptionMenu(frameInput, inputGender, *GENDERS)
+op = ttk.OptionMenu(frameInput, inputGender, *GENDERS)
 op.config(width=8)
 op.grid(row=0,column=3,padx=(0,10))
-Button(frameInput, text ="Generate Meals!", command = callbackGenerateMeals).grid(row=0,column=4)
+buttonGenerate = Button(frameInput, text ="Generate Meals!", command = callbackGenerateMeals)
+buttonGenerate.grid(row=0,column=4)
 frameInput.grid(row=1, column=0)
+
+# Frame : Error Message
+errorMessageLabel = Label(mainFrame, text = "", fg="red")
+errorMessageLabel.grid(row=2,column=0)
 
 # Frame : Generated Meals
 frameGenerateMeals = Frame(mainFrame)
-Label(frameGenerateMeals, text = "GENERATED MEALS").grid(row=0, column=0, pady=(10, 5))
+ttk.Separator(frameGenerateMeals).grid(row=0, column=0, sticky="ew", padx=10, pady=(10, 0))
+Label(frameGenerateMeals, text = "G E N E R A T E D   M E A L S", font=("Helvetica", 9, 'bold'), fg="#aaaaaa").grid(row=1, column=0, pady=(10, 5))
 frameMealsGrid = Frame(frameGenerateMeals)
-def dishFrame(frameMealsGrid, row, column, dishName, scores, ingredients):
-    dish1 = Frame(frameMealsGrid)
-    dish1UpperPanel = Frame(dish1)
-    Label(dish1UpperPanel, text = "Name").grid(row=0,column=0, sticky='e')
-    Label(dish1UpperPanel, text = dishName).grid(row=0,column=1, sticky='w')
-    Label(dish1UpperPanel, text = "Ingredients").grid(row=1,column=0, sticky='en')
-    ingredientsFrame = Frame(dish1UpperPanel)
+def dishFrame(frameMealsGrid, row, column, componentMap, dishData):
+    dish = Frame(frameMealsGrid)
+    dishContent = Frame(dish, bg= COLORS_DISH_CARD)
+    dishUpperPanel = Frame(dishContent, bg= COLORS_DISH_CARD)
+    Label(dishUpperPanel, text = "Name:", bg= COLORS_DISH_CARD).grid(row=0,column=0, sticky='e')
+    componentMap["name"] = Label(dishUpperPanel, text = "" if dishData == None else dishData.name, bg= COLORS_DISH_CARD, font=("Helvetica", 9, 'bold'))
+    componentMap["name"].grid(row=0,column=1, sticky='w')
+    Label(dishUpperPanel, text = "Ingredients:", bg= COLORS_DISH_CARD).grid(row=1,column=0, sticky='en')
+    ingredientsFrame = Frame(dishUpperPanel)
     scrollbar = Scrollbar(ingredientsFrame)
     scrollbar.pack(side = RIGHT, fill = BOTH)
-    ingredientsListbox = Listbox(ingredientsFrame)
-    ingredientsListbox.pack(side = LEFT, fill = BOTH)
-    for ingredient in ingredients:
-        ingredientsListbox.insert(END, ingredient)
-    ingredientsListbox.config(yscrollcommand = scrollbar.set)
-    scrollbar.config(command = ingredientsListbox.yview)
+    componentMap["ingredients"] = Listbox(ingredientsFrame)
+    componentMap["ingredients"].pack(side = LEFT, fill = BOTH)
+    componentMap["ingredients"].config(yscrollcommand = scrollbar.set)
+    scrollbar.config(command = componentMap["ingredients"].yview)
     ingredientsFrame.grid(row=1,column=1)
-    dish1UpperPanel.grid(row=0, column=0)
-    dish1LowerPanel = Frame(dish1)
-    Label(dish1LowerPanel, text = "CALORIES").grid(row=0,column=0)
-    Label(dish1LowerPanel, text = "PROTEIN").grid(row=0,column=1)
-    Label(dish1LowerPanel, text = "FAT").grid(row=0,column=2)
-    Label(dish1LowerPanel, text = "SODIUM").grid(row=0,column=3)
-    Label(dish1LowerPanel, text = "RATING").grid(row=0,column=4)
-    Label(dish1LowerPanel, text = str(scores[0])).grid(row=1,column=0)
-    Label(dish1LowerPanel, text = str(scores[1])).grid(row=1,column=1)
-    Label(dish1LowerPanel, text = str(scores[2])).grid(row=1,column=2)
-    Label(dish1LowerPanel, text = str(scores[3])).grid(row=1,column=3)
-    Label(dish1LowerPanel, text = str(scores[4])).grid(row=1,column=4)
-    dish1LowerPanel.grid(row=1, column=0)
-    dish1.grid(row=row, column=column)
-dishFrame(frameMealsGrid, 0, 0, "Tuna Ala Mode", [240, 220, 100, 150, 50], ["Egg", "Milk","Flower", "Soil", "Trash"])
-dishFrame(frameMealsGrid, 0, 1, "Sunny Side Up", [100, 200, 3, 4, 50], ["Egg", "Milk","Flower", "Soil", "Trash"])
-dishFrame(frameMealsGrid, 1, 0, "Crabs", [1, 2, 3, 4, 5], ["Egg", "Milk","Flower", "Soil", "Trash"])
-frameMealsGrid.grid(row=1, column=0)
-Label(frameGenerateMeals, text = "TOTAL RATING: 69").grid(row=2, column=0)
-frameGenerateMeals.grid(row=2, column=0)
+    dishUpperPanel.grid(row=0, column=0, padx=(10, 0), pady=(10, 10))
+    ttk.Separator(dishContent).grid(row=1, column=0, sticky="ew", padx=10)
+    dishLowerPanel = Frame(dishContent, bg= COLORS_DISH_CARD)
+    Label(dishLowerPanel, text = "Calories", bg= COLORS_DISH_CARD).grid(row=0,column=0)
+    Label(dishLowerPanel, text = "Protein", bg= COLORS_DISH_CARD).grid(row=0,column=1)
+    Label(dishLowerPanel, text = "Fat", bg= COLORS_DISH_CARD).grid(row=0,column=2)
+    Label(dishLowerPanel, text = "Carbs", bg= COLORS_DISH_CARD).grid(row=0,column=3)
+    Label(dishLowerPanel, text = "Fiber", bg= COLORS_DISH_CARD).grid(row=0,column=4)
+    componentMap["calories"] = Label(dishLowerPanel, text =  "" if dishData == None else dishData.calories, bg= COLORS_DISH_CARD)
+    componentMap["calories"].grid(row=1,column=0)
+    componentMap["protein"] = Label(dishLowerPanel, text = "" if dishData == None else dishData.protein, bg= COLORS_DISH_CARD)
+    componentMap["protein"].grid(row=1,column=1)
+    componentMap["fat"] = Label(dishLowerPanel, text = "" if dishData == None else dishData.fat, bg= COLORS_DISH_CARD)
+    componentMap["fat"].grid(row=1,column=2)
+    componentMap["carbs"] = Label(dishLowerPanel, text =  "" if dishData == None else dishData.carbs, bg= COLORS_DISH_CARD)
+    componentMap["carbs"].grid(row=1,column=3)
+    componentMap["fiber"] = Label(dishLowerPanel, text = "" if dishData == None else dishData.fiber, bg= COLORS_DISH_CARD)
+    componentMap["fiber"].grid(row=1,column=4)
+    dishLowerPanel.grid(row=2, column=0, padx=10, pady=(0, 10))
+    dishContent.grid(row=0, column=0, padx=5, pady=5)
+    dish.grid(row=row, column=column)
+    return dish
+
+dishFrameComponents = {
+    "dish1" : {},
+    "dish2" : {},
+    "dish3" : {},
+    "dish4" : {}
+}
+
+dish1 = None if mealsData == None else (mealsData.mealList[mealsDataIndex].getDish(1))
+dish2 = None if mealsData == None else (mealsData.mealList[mealsDataIndex].getDish(2))
+dish3 = None if mealsData == None else (mealsData.mealList[mealsDataIndex].getDish(3))
+dish4 = None if mealsData == None else (mealsData.mealList[mealsDataIndex].getDish(4))
+
+dishFrameComponents["dishFrame1"] = dishFrame(frameMealsGrid, 0, 0, dishFrameComponents["dish1"], dish1)
+dishFrameComponents["dishFrame2"] = dishFrame(frameMealsGrid, 0, 1, dishFrameComponents["dish2"], dish2)
+dishFrameComponents["dishFrame3"] = dishFrame(frameMealsGrid, 1, 0, dishFrameComponents["dish3"], dish3)
+dishFrameComponents["dishFrame4"] = dishFrame(frameMealsGrid, 1, 1, dishFrameComponents["dish4"], dish4)
+# dishFrameComponents["dishFrame1"].grid_remove()
+# dishFrameComponents["dishFrame2"].grid_remove()
+# dishFrameComponents["dishFrame3"].grid_remove()
+# dishFrameComponents["dishFrame4"].grid_remove()
+
+
+frameMealsGrid.grid(row=2, column=0)
+totalText = Label(frameGenerateMeals, text = "", font=("Helvetica", 10, 'bold'))
+totalText.grid(row=3, column=0, pady=(10, 5))
+frameGenerateMeals.grid(row=3, column=0)
 
 # Frame : Lower Input
 frameLowerInput = Frame(mainFrame)
-Button(frameLowerInput, text ="Previous Meal", command = callbackPreviousMeals).grid(row=0,column=0, padx=2)
-Button(frameLowerInput, text ="Next Meal", command = callbackNextMeals).grid(row=0,column=1, padx=2)
-frameLowerInput.grid(row=3, column=0, pady=(10, 0))
+buttonPrevMeal = Button(frameLowerInput, text ="Previous Meal", command = callbackPreviousMeals, state="disabled")
+buttonPrevMeal.grid(row=0,column=0, padx=2)
+buttonNextMeal = Button(frameLowerInput, text ="Next Meal", command = callbackNextMeals, state="disabled")
+buttonNextMeal.grid(row=0,column=1, padx=2)
+frameLowerInput.grid(row=4, column=0, pady=(10, 0))
 
 mainFrame.grid(padx=10, pady=10)
 
+root.resizable(False, False) 
 root.mainloop()
